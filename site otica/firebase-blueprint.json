@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A product in the eyewear catalog",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Product name" },
+        "price": { "type": "string", "description": "Product price (formatted)" },
+        "category": { "type": "string", "description": "Category (Grau, Sol, Lentes)" },
+        "image": { "type": "string", "description": "Image URL" },
+        "isOffer": { "type": "boolean", "description": "Whether it is on offer" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["name", "price", "category", "image"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Application user",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Catalog products"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles"
+    }
+  }
+}

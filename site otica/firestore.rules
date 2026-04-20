@@ -1,0 +1,75 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: products
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required)
+//   - price: string (required)
+//   - category: string (required)
+//   - image: string (required)
+//   - isOffer: bool (optional)
+//   - createdAt: timestamp (required)
+//
+// Collection: users
+// Document ID: userId (auth.uid)
+// Fields:
+//   - email: string (required)
+//   - role: string (required, 'admin' or 'user')
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email.matches("(?i)Anndrefrazao@gmail.com") && request.auth.token.email_verified == true));
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price', 'category', 'image', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.price is string && data.price.size() > 0 && data.price.size() < 20 &&
+             data.category in ['Grau', 'Sol', 'Lentes'] &&
+             data.image is string && data.image.size() > 10 && data.image.size() < 1048576 &&
+             data.createdAt is timestamp &&
+             (!('isOffer' in data) || data.isOffer is bool) &&
+             (!('imagePosition' in data) || data.imagePosition in ['center', 'top', 'bottom', 'left', 'right']);
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'role']) &&
+             data.email is string &&
+             data.role in ['admin', 'user'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /products/{productId} {
+      allow read: if true; // Public catalog
+      allow create: if isAdmin() && isValidProduct(request.resource.data);
+      allow update: if isAdmin() && isValidProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId && request.resource.data.role == 'user';
+      allow update: if isAdmin() && isValidUser(request.resource.data);
+    }
+  }
+}
